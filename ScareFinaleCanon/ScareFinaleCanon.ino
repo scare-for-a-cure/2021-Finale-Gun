@@ -14,7 +14,7 @@
 
 //variables
 //inputs
-int keycard = A0;         //a keycard reader
+RBD::Button keycard = A0;         //a keycard reader
 RBD::Button joystickTrigger(A1); //replsacement joystick button
 int joystickLR = A2;    //joystick action
 int joystickUD = A3;    //joystick action
@@ -178,28 +178,28 @@ void loop() {
   }// end reset if statement 
 
   
-  if((digitalRead(keycard) && (startup == 0)) { // runs start up first time keycard is inserted
+  if((keycard.isPressed()) && (startup == 0)) { // runs start up first time keycard is inserted
     Serial.println("Key Card Inserted");
     startUpSequence();
   }//end if startup
     
-  if((digitalRead(keycard) && (analogRead(joystickLR)>= 800 )){ //pivot left when joystick moved left
+  if((keycard.isPressed()) && (analogRead(joystickLR)>= 800 )){ //pivot left when joystick moved left
     Serial.println("Joystick Left Motion Detected");
     DirectionSelect(HIGH);
   }//end if
     
-  if((digitalRead(keycard) && (analogRead(joystickLR)<= 200 )){ //pivot rightbwhen joystick moved right
+  if((keycard.isPressed()) && (analogRead(joystickLR)<= 200 )){ //pivot rightbwhen joystick moved right
     Serial.println("Joystick Right Motion Detected");
     DirectionSelect(LOW);
   }//end if
     
-  if((digitalRead(keycard) && (joystickTrigger.onPressed())){ //runs the charging sequence when joystick trigger is pressed
+  if((keycard.isPressed()) && (joystickTrigger.onPressed())){ //runs the charging sequence when joystick trigger is pressed
     Serial.println("Joystick Trigger Pressed");
     chargingSequence();
     // it exits the sub function quickly and is handled more by the timer based ramp up section below
   }//end if
     
-  if((digitalRead(keycard) && (masterTrigger.onPressed())){ //runs the firing sequence when master triggger is pressed
+  if((keycard.isPressed()) && (masterTrigger.onPressed())){ //runs the firing sequence when master triggger is pressed
     Serial.println("Master Trigger Pressed");
     firingSequence();
   }//end if
