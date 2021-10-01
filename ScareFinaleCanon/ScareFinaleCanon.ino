@@ -15,13 +15,10 @@
 //variables
 //inputs
 int keycard = A0;         //a keycard reader
-//int joystickTrigger = A1;//a button on the joystick
 RBD::Button joystickTrigger(A1); //replsacement joystick button
 int joystickLR = A2;    //joystick action
 int joystickUD = A3;    //joystick action
-//int reset = 12;        //a button
 RBD::Button reset(12); //replacement button
-//int masterTrigger = 13;//a button
 RBD::Button masterTrigger(13);  //replacement button 
 
 //outputs
