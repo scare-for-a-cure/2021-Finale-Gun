@@ -6,20 +6,28 @@
 ///and moved the sub functions up above the void loop and void setup  as the function has to be declared above where it will be used.
 /////////
 
- 
+//special connection notes
+//Master trigger is connected to +5v
+//joystick trigger has to have a 10k resistor between it and ground.
 
 //LIBRARIES
 #include <RBD_Timer.h>  // https://github.com/alextaujenis/RBD_Timer
 #include <RBD_Button.h> // https://github.com/alextaujenis/RBD_Button
 
+
+int DebugMode = 0;// 1= serial enabled, must be disabled for actual use otherwise outputs 1&2 will be stuck on. 
+
+
 //variables
 //inputs
 RBD::Button keycard = A0;         //a keycard reader
-RBD::Button joystickTrigger(A1); //replsacement joystick button
+//RBD::Button joystickTrigger(A1); //replacement joystick button
+int joysticktrigger = A1;
 int joystickLR = A2;    //joystick action
 int joystickUD = A3;    //joystick action
 RBD::Button reset(12); //replacement button
-RBD::Button masterTrigger(13);  //replacement button 
+//RBD::Button masterTrigger(13);  //replacement button 
+int masterTrigger = 13; // we aren't able to use the RBD button library on pin 13 because it doesnt have a pull up resister
 
 //outputs
 int fogRight = 0;       //fog machine
@@ -42,11 +50,12 @@ int barrelLights = 11; //lights
 //other
 int startup = 0; //0 if the wakeup sequence has not already been run, 1 if it has
 int flickrstate = LOW; // whether the lights are on or off for flickering
-int flickrstep = 12; // step in array for flickr sequence  if step is 12 or high it knows not to run
-int flickrtimes[] = {100, 50, 100, 20, 10, 50, 30, 100, 20, 300, 20, 100};
+int flickrstep = 13; // step in array for flickr sequence  if step is 12 or high it knows not to run
+int flickrtimes[] = {300, 50, 100, 20, 10, 50, 30, 100, 20, 300, 20, 100};
 int fogLR = 0; // left or right fog machine 
 int brightness = 0; // variable for analog right for brightness of barrell lights 
-
+int triggerVal =0;
+int masterVal =0;
 
 
 
@@ -58,6 +67,7 @@ RBD::Timer flickr;  // variable time delay for flickering lights during bootup
 RBD::Timer dramatic; // 2 second delay after bootup for aiming
 RBD::Timer firedelay; // 0.5 second delay after pulling trigger
 RBD::Timer firepause; // 2 second delay after canon has fired
+RBD::Timer inputDelay; // 0.5 second delay to limit how many times a input is read
 
 
 
@@ -90,10 +100,11 @@ void startUpSequence(){ //wakeup sequence for turret, run once keycard is insert
   digitalWrite(Audio_powerup,HIGH); //trigger the power up audio
   audioTimer.restart(); // reset the audio trigger timer
   
-  flickr.setTimeout(flickrtimes[flickrstep]); // set the timer for the flickr for the first time step
+  flickr.setTimeout(200); // set the timer for the flickr for the first time step
+  flickr.restart();
   startup = 1; //mark wakeup has been run
   Serial.println("Startup running");
-}//end wakeup
+}//end startUpSequence
 
 
 void DirectionSelect(int x){ //set the values for pistons and sounds depending on direction LEFT = HIGH
@@ -101,7 +112,7 @@ void DirectionSelect(int x){ //set the values for pistons and sounds depending o
        fogLR = x; //store decision in variable for use when firing canon
        digitalWrite(Audio_moving, HIGH); // start audio
        audioTimer.restart(); // reset the time to start 100ms timeout.
-}
+}//end directionSelect
 
 
 //charging sequence ready - james 9/30
@@ -142,7 +153,9 @@ void firingSequence(){
 void setup() {
   // put your setup code here, to run once:
   //init serial coms
-  Serial.begin(9600);
+  if(DebugMode){
+    Serial.begin(9600); // serial print has to be disabled while running the system as outputs 1 and 2 are stuck as always on if serial print is enabled.
+  }
   Serial.println("Begin Initialization");
   // inint pin modes
   pinMode(fogLeft, OUTPUT);
@@ -157,14 +170,36 @@ void setup() {
   pinMode(pivotLR, OUTPUT);
   pinMode(pivotUD, OUTPUT);
   pinMode(barrelLights, OUTPUT);
+  digitalWrite(pivotUD, LOW);
+  digitalWrite(pivotLR, LOW);
+  digitalWrite(barrelLights, LOW);
+  digitalWrite(lasers, LOW);
+  digitalWrite(blindLights, LOW);
+  
   // init timers
   audioTimer.setTimeout(100);
+  audioTimer.onExpired();
   rampUp.setTimeout(3000);
+  rampUp.onExpired();
   flickr.setTimeout(100); // this gets reset as the script runs
+  flickr.onExpired(); 
   dramatic.setTimeout(2000);
+  dramatic.onExpired();  
   firedelay.setTimeout(500);
+  firedelay.onExpired();
   chase.setTimeout(1500);
+  chase.onExpired();
   firepause.setTimeout(2000);
+  firepause.onExpired();
+  inputDelay.setTimeout(1000);
+  inputDelay.onExpired();
+  //stop all the timers once so they don't trigger things yet
+
+
+
+
+
+
 
   
   Serial.println("Initialization Complete");
@@ -177,31 +212,47 @@ void loop() {
     resetSequence();
   }// end reset if statement 
 
-  
+ // Serial.println(analogRead(joystickLR));
   if((keycard.isPressed()) && (startup == 0)) { // runs start up first time keycard is inserted
     Serial.println("Key Card Inserted");
     startUpSequence();
+    Serial.println(flickrstep);
   }//end if startup
     
-  if((keycard.isPressed()) && (analogRead(joystickLR)>= 800 )){ //pivot left when joystick moved left
+  if((keycard.isPressed()) && (analogRead(joystickLR)<= 300 )&& (inputDelay.isExpired()) ){ //pivot left when joystick moved left
     Serial.println("Joystick Left Motion Detected");
     DirectionSelect(HIGH);
+    flickr.restart();
+    inputDelay.restart();
   }//end if
     
-  if((keycard.isPressed()) && (analogRead(joystickLR)<= 200 )){ //pivot rightbwhen joystick moved right
+  if((keycard.isPressed()) && (analogRead(joystickLR)>= 750 ) && (inputDelay.isExpired())){ //pivot rightbwhen joystick moved right
     Serial.println("Joystick Right Motion Detected");
     DirectionSelect(LOW);
+    inputDelay.restart();
   }//end if
     
-  if((keycard.isPressed()) && (joystickTrigger.onPressed())){ //runs the charging sequence when joystick trigger is pressed
+//  if((keycard.isPressed()) && (joystickTrigger.onPressed())){ //runs the charging sequence when joystick trigger is pressed
+  if((keycard.isPressed()) && digitalRead(joysticktrigger)&& ( inputDelay.isExpired())){
+  //triggerVal = analogRead(joysticktrigger);
+  //Serial.print("TriggerVal: ");
+  //Serial.println(triggerVal);
+  //if((keycard.isPressed()) && (triggerVal>= 1022) && ( inputDelay.isExpired())){
     Serial.println("Joystick Trigger Pressed");
+    inputDelay.restart();
     chargingSequence();
     // it exits the sub function quickly and is handled more by the timer based ramp up section below
   }//end if
     
-  if((keycard.isPressed()) && (masterTrigger.onPressed())){ //runs the firing sequence when master triggger is pressed
+//  if((keycard.isPressed()) && (masterTrigger.onPressed())){ //runs the firing sequence when master triggger is pressed
+//    masterVal = analogRead(masterTrigger);
+//    Serial.print("masterVal:");
+//    Serial.println(masterVal);
+  if((keycard.isPressed()) && (digitalRead(masterTrigger)) && (inputDelay.isExpired())){
+//    inputDelay.restart();
     Serial.println("Master Trigger Pressed");
     firingSequence();
+    inputDelay.restart();
   }//end if
 
 /// INPUT BASED EVENTS GO ABOVE
@@ -211,6 +262,7 @@ void loop() {
 ////////// all audio //////////
 // setting timer audio outside allows it to control all audio segments. and gore canon
   if(audioTimer.onExpired()){
+    Serial.println("Audio trigger end");
     digitalWrite(Audio_firing, LOW);
     digitalWrite(Audio_charging, LOW);
     digitalWrite(Audio_moving, LOW);
@@ -224,18 +276,24 @@ void loop() {
 ////////// STARTUP SEQUENCE //////////
 //for handling flicr of barrel
   if(flickrstep < 12){ // if the flickr array hasnt been finished set the next state
+    Serial.print("flickrrunning :");
+    Serial.print(flickrstep);
+    Serial.print(" , ");
+    Serial.println(flickr.getValue());
     if(flickr.onExpired()){
+      Serial.println("Flickering process step");
       flickrstate != flickrstate;
       digitalWrite(barrelLights, flickrstate);
-      ++flickrstep;
+      flickrstep++;
       flickr.setTimeout(flickrtimes[flickrstep]);
       flickr.restart();
-    }
+    }//end if
     
-    if (flickrstep == 12){ //if the flickr steps have just now been finished run this script
+    if (flickrstep >= 12){ //if the flickr steps have just now been finished run this script
       dramatic.restart(); // start 2 second timer before canon moves ot the left with audio trigger
       Serial.println("Flickering process complete");
-    }
+      flickrstep=13;
+    }//end if
     
   }//end flickring handling
 
@@ -244,7 +302,7 @@ void loop() {
     digitalWrite(Audio_moving, HIGH);
     audioTimer.restart();
     Serial.println("Dramatic pause complete, canon armed");
-
+  }
 
 
 ////////// CHARGING SEQUENCE //////////
@@ -263,8 +321,8 @@ void loop() {
   }
 
 
-
-  }
+ 
+  
 
 ////////// FIRING SEQUENCE //////////
   if(firedelay.onExpired()){ // wait the 0.5 seconds after triggerbeofre turning on fogs machines
