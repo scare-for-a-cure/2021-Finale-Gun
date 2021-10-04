@@ -1,7 +1,7 @@
 //LIBRARIES
 #include <RBD_Timer.h>  // https://github.com/alextaujenis/RBD_Timer
 #include <RBD_Button.h> // https://github.com/alextaujenis/RBD_Button
-#include <Adafruit_NeoPizel.h>
+#include <Adafruit_NeoPixel.h>
 
 
 
@@ -9,22 +9,24 @@
 #define Num_Charge  30 //numer of leds in the chargeing section
 #define Num_Barrel  30 // number of leds in the chasing leds section
 
-Adafruit_NeoPixel pixels(90,11, NEO_RGB + NEOKHZ800); //total leds / pin / led type
+Adafruit_NeoPixel pixels(90,11, NEO_RGB); //total leds / pin / led type
 
 // inputs
-RBD:Button flickr(A1); //currently joystick
-RBD:Button charge(12); // currentlyr reset
-RBD:Button barrel(13); // currently master
+RBD::Button flickr(A1); //currently joystick
+RBD::Button charge(12); // currentlyr reset
+RBD::Button barrel(13); // currently master
 
 /// variables
 int flickstate = 0;
 int chargestate = 0;
 int barrelstate =0;
 
+
 ////////////////////
 /// Sub Functions///
 ////////////////////
 void flickr_run(int on){
+  int light = 0;
   if(on == 1){
     light = 255;    
   }
@@ -32,7 +34,7 @@ void flickr_run(int on){
     light = 0;
   }
   for(int i=0; i< Num_Power; i++){
-    pixles.setPixelColor(i, pixels.Color(light,light,light);
+    pixels.setPixelColor(i, pixels.Color(light,light,light));
   }
   pixels.show();
 }
@@ -41,7 +43,7 @@ void flickr_run(int on){
 
 void charge_bright(int val){
   for(int i= Num_Power ; i < (Num_Power + Num_Charge) ; i++){
-    pixles.setPixelColor(i, pixels.Color(val,val,val);
+    pixels.setPixelColor(i, pixels.Color(val,val,val));
   }
   pixels.show();
 }
@@ -49,12 +51,13 @@ void charge_bright(int val){
 void chase_sequence(int off){
   for(int i= Num_Power ; i < (Num_Power + Num_Charge + Num_Barrel) ; i++){
     if( (( i + off ) /3 ) == 0){
-      pixles.setPixelColor(i, pixels.Color(255,255,255);
+      pixels.setPixelColor(i, pixels.Color(255,255,255));
     }
     else{
-       pixles.setPixelColor(i, pixels.Color(0,0,0);
+       pixels.setPixelColor(i, pixels.Color(0,0,0));
     }
-  pixels.show();
+    pixels.show();
+  }
 }
 
 
@@ -63,16 +66,16 @@ void chase_sequence(int off){
 //////////////////////
 
 
-void setup() {
+void setup(){
   // put your setup code here, to run once:
   pixels.begin();
   pixels.clear();
 }
 
-void loop() {
+void loop(){
   if(flickr.onPressed()){
     flickstate != flickstate;
-    flickr_run(flickrstate);
+    flickr_run(flickstate);
   }
   
   if(charge.onPressed()){ // each time the button is pressed the lghts will get slightly brigther
