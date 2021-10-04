@@ -5,11 +5,11 @@
 
 
 
-#define Num_Power 30
-#define Num_Charge  30
-#define Num_Barrel  30 
+#define Num_Power 30 // # of leds in the power/flicker section
+#define Num_Charge  30 //numer of leds in the chargeing section
+#define Num_Barrel  30 // number of leds in the chasing leds section
 
-Adafruit_NeoPixel pixels(90,11, NEO_RGB + NEOKHZ800);
+Adafruit_NeoPixel pixels(90,11, NEO_RGB + NEOKHZ800); //total leds / pin / led type
 
 // inputs
 RBD:Button flickr(A1); //currently joystick
