@@ -60,15 +60,21 @@ int masterVal =0;
 
 
 //Timers
-RBD::Timer audioTimer; // 100ms delay for the audio tirgger to stop as well as gore canons
-RBD::Timer rampUp; // 1 sec timer that increments light intensity charging sequence, when armed
-RBD::Timer chase; // no description of what chase is supposed to accomplish yet
-RBD::Timer flickr;  // variable time delay for flickering lights during bootup
-RBD::Timer dramatic; // 2 second delay after bootup for aiming
-RBD::Timer firedelay; // 0.5 second delay after pulling trigger
-RBD::Timer firepause; // 2 second delay after canon has fired
-RBD::Timer inputDelay; // 0.5 second delay to limit how many times a input is read
+RBD::Timer audioTimer(100); // 100ms delay for the audio tirgger to stop as well as gore canons
+RBD::Timer rampUp(3000); // 1 sec timer that increments light intensity charging sequence, when armed
+RBD::Timer chase(1500); // no description of what chase is supposed to accomplish yet
+RBD::Timer flickr(100);  // variable time delay for flickering lights during bootup
+RBD::Timer dramatic(2000); // 2 second delay after bootup for aiming
+RBD::Timer firedelay(500); // 0.5 second delay after pulling trigger
+RBD::Timer firepause(2000); // 2 second delay after canon has fired
+RBD::Timer inputDelay(1000); // 0.5 second delay to limit how many times a input is read
 
+//Audio Timers
+//RBD::Timer Audio_powerupTime(
+RBD::Timer Audio_movingTime(2000);
+RBD::Timer Audio_chargingTime(5000);
+RBD::Timer Audio_firingTime(4000);
+//RBD::Timer Audio_silenceTime(
 
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -177,25 +183,20 @@ void setup() {
   digitalWrite(blindLights, LOW);
   
   // init timers
-  audioTimer.setTimeout(100);
-  audioTimer.onExpired();
-  rampUp.setTimeout(3000);
+
   rampUp.onExpired();
-  flickr.setTimeout(100); // this gets reset as the script runs
   flickr.onExpired(); 
-  dramatic.setTimeout(2000);
   dramatic.onExpired();  
-  firedelay.setTimeout(500);
   firedelay.onExpired();
-  chase.setTimeout(1500);
   chase.onExpired();
-  firepause.setTimeout(2000);
   firepause.onExpired();
-  inputDelay.setTimeout(1000);
   inputDelay.onExpired();
   //stop all the timers once so they don't trigger things yet
 
-
+  audioTimer.onExpired();
+  Audio_movingTime.onExpired();
+  Audio_chargingTime.onExpired();
+  Audio_firingTime.onExpired();
 
 
 
@@ -232,22 +233,13 @@ void loop() {
     inputDelay.restart();
   }//end if
     
-//  if((keycard.isPressed()) && (joystickTrigger.onPressed())){ //runs the charging sequence when joystick trigger is pressed
   if((keycard.isPressed()) && digitalRead(joysticktrigger)&& ( inputDelay.isExpired())){
-  //triggerVal = analogRead(joysticktrigger);
-  //Serial.print("TriggerVal: ");
-  //Serial.println(triggerVal);
-  //if((keycard.isPressed()) && (triggerVal>= 1022) && ( inputDelay.isExpired())){
     Serial.println("Joystick Trigger Pressed");
     inputDelay.restart();
     chargingSequence();
     // it exits the sub function quickly and is handled more by the timer based ramp up section below
   }//end if
     
-//  if((keycard.isPressed()) && (masterTrigger.onPressed())){ //runs the firing sequence when master triggger is pressed
-//    masterVal = analogRead(masterTrigger);
-//    Serial.print("masterVal:");
-//    Serial.println(masterVal);
   if((keycard.isPressed()) && (digitalRead(masterTrigger)) && (inputDelay.isExpired())){
 //    inputDelay.restart();
     Serial.println("Master Trigger Pressed");
@@ -264,14 +256,24 @@ void loop() {
   if(audioTimer.onExpired()){
     Serial.println("Audio trigger end");
     digitalWrite(Audio_firing, LOW);
-    digitalWrite(Audio_charging, LOW);
-    digitalWrite(Audio_moving, LOW);
     digitalWrite(Audio_powerup, LOW);
     digitalWrite(Audio_silence, LOW); 
     digitalWrite(goreCanon, LOW);
   }//if end
 
+// some of the audio effects are needing to be run as a seperate timer
+  if(Audio_movingTime.onExpired()){
+    digitalWrite(Audio_moving, LOW);
+  }
 
+  if(Audio_chargingTime.onExpired()){
+    digitalWrite(Audio_charging, LOW);
+  }
+
+  if(Audio_firingTime.onExpired()){
+    digitalWrite(Audio_firing, LOW);
+  }
+  
 
 ////////// STARTUP SEQUENCE //////////
 //for handling flicr of barrel
