@@ -1,5 +1,5 @@
-//Finale Code 2012 season, made by Xenia Knudsen (512) 586-4973
-//James Manley (210)827-3050
+//Finale Code 2012 season, made by Xenia Knudsen 
+//James Manley james.manley@scareforacure.org
 
 //////////Writer notes//////////////////////////////////
 ///9.26/// James M - added cerial print ln notes to many different parts of the program
